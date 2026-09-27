@@ -1,0 +1,13 @@
+# Root — OS / IDE
+.DS_Store
+Thumbs.db
+
+# Env secrets (never commit real .env)
+.env
+*.local
+
+# Docker volumes
+pgdata/
+
+# Logs
+*.log

@@ -1,0 +1,53 @@
+# Local default: H2 in-memory (zero setup). Activate `postgres` profile in Docker/prod.
+server:
+  port: 8080
+
+spring:
+  application:
+    name: canteen-backend
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:canteen
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+jwt:
+  secret: ${JWT_SECRET:change_me_to_a_very_long_random_string_min_32_chars}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+app:
+  admin:
+    id: ${ADMIN_ID:admin}
+    password: ${ADMIN_PASSWORD:admin123}
+    name: ${ADMIN_NAME:Canteen Admin}
+    email: ${ADMIN_EMAIL:admin@college.edu}
+
+---
+# Postgres profile (used by docker-compose: SPRING_PROFILES_ACTIVE=postgres)
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/canteen}
+    username: ${SPRING_DATASOURCE_USERNAME:canteen}
+    password: ${SPRING_DATASOURCE_PASSWORD:changeme_strong_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: false
