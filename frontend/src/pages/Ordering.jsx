@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, errMsg } from '../api/client.js'
+import HoldButton from '../components/HoldButton.jsx'
 
 const EMOJI = ['🍛', '🍜', '🥪', '🍔', '☕', '🧃', '🍩', '🥗']
 
@@ -122,9 +123,26 @@ export default function Ordering() {
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <b>Total (pay on pickup)</b><b className="price">₹{total.toFixed(2)}</b>
                 </div>
-                <button className="btn" style={{ width: '100%', marginTop: 12 }} disabled={placing} onClick={place}>
-                  {placing ? 'Placing…' : 'Place Pre-order'}
-                </button>
+                <div className="cart-actions">
+                  <button className="btn" disabled={placing} onClick={place}>
+                    {placing ? 'Placing…' : 'Place Pre-order'}
+                  </button>
+                  <HoldButton
+                    className="cart-hold"
+                    doneLabel="Cleared"
+                    backgroundColor="#131e36"
+                    fillColor="#2563eb"
+                    textColor="#ffffff"
+                    fillTextColor="#ffffff"
+                    size="md"
+                    radius={12}
+                    fillDirection="right"
+                    holdTime={2000}
+                    onHold={() => { setCart({}); setOk('') }}
+                  >
+                    Hold to delete
+                  </HoldButton>
+                </div>
               </>
             )}
           </div>
