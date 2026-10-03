@@ -63,7 +63,7 @@ public class SecurityConfig {
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**", "/api/health", "/h2-console/**",
-                "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                "/v3/api-docs/**", "/swagger-ui/**", "/error").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/menu/**").authenticated()
             .anyRequest().authenticated())
         // allow H2 console frames in local dev

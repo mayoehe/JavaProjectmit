@@ -42,6 +42,9 @@ public class AuthService {
   public AuthResponse login(LoginRequest req) {
     User u = users.findByStudentId(req.studentId().trim())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+    if ("DISABLED".equalsIgnoreCase(u.getStatus())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is disabled. Contact admin.");
+    }
     if (!encoder.matches(req.password(), u.getPasswordHash())) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }

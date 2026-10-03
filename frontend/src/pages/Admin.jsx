@@ -4,7 +4,7 @@ import { api, errMsg } from '../api/client.js'
 const STATUSES = ['PENDING', 'READY', 'COLLECTED', 'UNCOLLECTED', 'CANCELLED']
 
 export default function Admin() {
-  const [tab, setTab] = useState('orders') // orders | menu | tabs
+  const [tab, setTab] = useState('orders') // orders | menu | tabs | data
   const [orders, setOrders] = useState([])
   const [menu, setMenu] = useState([])
   const [students, setStudents] = useState([])
@@ -13,6 +13,11 @@ export default function Admin() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', price: '', description: '', category: 'Snacks', available: true, imageUrl: '' })
   const [editing, setEditing] = useState(null)
+  const [excelMsg, setExcelMsg] = useState('')
+  const [excelErr, setExcelErr] = useState('')
+  const [excelBusy, setExcelBusy] = useState(false)
+  const [salesFrom, setSalesFrom] = useState('')
+  const [salesTo, setSalesTo] = useState('')
 
   const load = async () => {
     setLoading(true); setError('')
@@ -74,6 +79,53 @@ export default function Admin() {
     load()
   }
 
+  const exportFile = async (path, filename) => {
+    setExcelMsg(''); setExcelErr(''); setExcelBusy(true)
+    try {
+      const res = await api.get(path, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url; a.download = filename
+      document.body.appendChild(a); a.click(); a.remove()
+      window.URL.revokeObjectURL(url)
+      setExcelMsg(`Downloaded ${filename}. Edit it in Excel, then re-upload below.`)
+    } catch (e) {
+      setExcelErr(errMsg(e, 'Export failed'))
+    } finally {
+      setExcelBusy(false)
+    }
+  }
+
+  const exportSales = () => {
+    const q = new URLSearchParams()
+    if (salesFrom) q.set('from', salesFrom)
+    if (salesTo) q.set('to', salesTo)
+    const qs = q.toString() ? `?${q}` : ''
+    const name = `canteen-sales-daily${salesFrom || salesTo ? `-${salesFrom || 'all'}_to_${salesTo || 'all'}` : ''}.xlsx`
+    exportFile(`/api/admin/export/sales-daily${qs}`, name)
+  }
+
+  const importFile = async (kind, file) => {
+    if (!file) return
+    setExcelMsg(''); setExcelErr(''); setExcelBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.post(`/api/admin/import/${kind}`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const r = res.data
+      const errs = (r.errors || []).join('; ')
+      setExcelMsg(`${kind === 'users' ? 'Users' : 'Menu'}: created ${r.created}, updated ${r.updated}, skipped ${r.skipped}${errs ? `. Issues: ${errs}` : '. All rows OK.'}`)
+      load()
+    } catch (e) {
+      const serverMsg = e?.response?.data?.message || e?.response?.data?.error
+      setExcelErr(serverMsg || errMsg(e, 'Import failed'))
+    } finally {
+      setExcelBusy(false)
+    }
+  }
+
   return (
     <div className="page">
       <h2>🍳 Canteen Dashboard</h2>
@@ -91,9 +143,9 @@ export default function Admin() {
       )}
 
       <div className="row" style={{ marginBottom: 16 }}>
-        {['orders', 'menu', 'tabs'].map((t) => (
+        {['orders', 'menu', 'tabs', 'data'].map((t) => (
           <button key={t} className={tab === t ? 'btn small' : 'btn small secondary'} onClick={() => setTab(t)}>
-            {t === 'orders' ? '📦 Orders' : t === 'menu' ? '📋 Menu' : '📒 Student Tabs'}
+            {t === 'orders' ? '📦 Orders' : t === 'menu' ? '📋 Menu' : t === 'tabs' ? '📒 Student Tabs' : '🗄️ Excel Data'}
           </button>
         ))}
         <button className="btn small ghost" onClick={load}>↻ Refresh</button>
@@ -192,6 +244,43 @@ export default function Admin() {
                 </tbody>
               </table>
               {students.length === 0 && <p className="muted">No students yet.</p>}
+            </div>
+          )}
+
+          {tab === 'data' && (
+            <div className="grid two">
+              <div className="card">
+                <h3>📤 Export to Excel (Admin only)</h3>
+                <p className="muted">Passwords are never exported. One file with 2 sheets is recommended.</p>
+                <div className="row" style={{ marginTop: 8 }}>
+                  <button className="btn small" disabled={excelBusy} onClick={() => exportFile('/api/admin/export/all', 'canteen-export.xlsx')}>⬇ Export All (.xlsx)</button>
+                  <button className="btn small secondary" disabled={excelBusy} onClick={() => exportFile('/api/admin/export/users', 'canteen-users.xlsx')}>⬇ Export Users</button>
+                  <button className="btn small secondary" disabled={excelBusy} onClick={() => exportFile('/api/admin/export/menu', 'canteen-menu.xlsx')}>⬇ Export Menu</button>
+                </div>
+                {excelMsg && <p style={{ color: 'var(--green)', marginTop: 10 }}>{excelMsg}</p>}
+                {excelErr && <p className="error">{String(excelErr)}</p>}
+              </div>
+              <div className="card">
+                <h3>📥 Import from Excel</h3>
+                <p className="muted">Upload an edited export. Blank NewPassword keeps the old password. Only changed rows are updated.</p>
+                <label className="label" style={{ marginTop: 8 }}>Users file (.xlsx)</label>
+                <input className="input" type="file" accept=".xlsx,.xlsm" disabled={excelBusy}
+                  onChange={(e) => { importFile('users', e.target.files[0]); e.target.value = '' }} />
+                <label className="label" style={{ marginTop: 8 }}>Menu file (.xlsx)</label>
+                <input className="input" type="file" accept=".xlsx,.xlsm" disabled={excelBusy}
+                  onChange={(e) => { importFile('menu', e.target.files[0]); e.target.value = '' }} />
+                <p className="muted" style={{ marginTop: 8 }}>Users columns: ID | StudentID/Username | Name | Email | Role | TabBalance | Status | CreatedAt | UpdatedAt | NewPassword. Menu columns: ID | Name | Description | Price | Category | Available | ImageURL | MenuDate (yyyy-MM-dd) | CreatedAt | UpdatedAt.</p>
+              </div>
+              <div className="card" style={{ gridColumn: '1 / -1' }}>
+                <h3>📊 Sales Report — day by day (Admin only)</h3>
+                <p className="muted">One-click Excel with 2 sheets: DailySales (orders, items, revenue, status split, students, avg order + TOTAL row) and ItemBreakdown (qty + revenue per dish per day). Cancelled orders are counted but excluded from revenue.</p>
+                <div className="row" style={{ marginTop: 8 }}>
+                  <label className="label">From <input className="input" type="date" value={salesFrom} disabled={excelBusy} onChange={(e) => setSalesFrom(e.target.value)} /></label>
+                  <label className="label">To <input className="input" type="date" value={salesTo} disabled={excelBusy} onChange={(e) => setSalesTo(e.target.value)} /></label>
+                  <button className="btn small" disabled={excelBusy} onClick={exportSales}>⬇ Export Sales (.xlsx)</button>
+                  {(salesFrom || salesTo) && <button className="btn small ghost" disabled={excelBusy} onClick={() => { setSalesFrom(''); setSalesTo('') }}>Clear</button>}
+                </div>
+              </div>
             </div>
           )}
         </>

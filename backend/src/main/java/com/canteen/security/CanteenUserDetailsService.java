@@ -21,8 +21,9 @@ public class CanteenUserDetailsService implements UserDetailsService {
   public UserDetails loadUserByUsername(String studentId) throws UsernameNotFoundException {
     User u = users.findByStudentId(studentId)
         .orElseThrow(() -> new UsernameNotFoundException("No user: " + studentId));
+    boolean enabled = !"DISABLED".equalsIgnoreCase(u.getStatus());
     return new org.springframework.security.core.userdetails.User(
-        u.getStudentId(), u.getPasswordHash(),
+        u.getStudentId(), u.getPasswordHash(), enabled, true, true, true,
         List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole())));
   }
 }

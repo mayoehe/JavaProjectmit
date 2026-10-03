@@ -10,4 +10,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
   boolean existsByStudentId(String studentId);
   List<User> findByRoleOrderByStudentIdAsc(String role);
   List<User> findByTabBalanceGreaterThanOrderByTabBalanceDesc(double min);
+  List<User> findAllByOrderByIdAsc();
+  default List<User> findAllByOrderById() { return findAllByOrderByIdAsc(); }
 }

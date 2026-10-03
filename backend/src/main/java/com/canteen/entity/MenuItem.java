@@ -5,7 +5,11 @@ import java.time.Instant;
 
 /** One dish/snack on the canteen's menu for the day. */
 @Entity
-@Table(name = "menu_items")
+@Table(name = "menu_items", indexes = {
+    @Index(name = "idx_menu_category", columnList = "category"),
+    @Index(name = "idx_menu_available", columnList = "available"),
+    @Index(name = "idx_menu_date", columnList = "menuDate")
+})
 public class MenuItem {
 
   @Id
@@ -28,8 +32,26 @@ public class MenuItem {
 
   private String imageUrl;
 
+  /** Date this dish belongs to (daily menus). Null = served generally / today. */
+  private java.time.LocalDate menuDate;
+
   @Column(nullable = false, updatable = false)
   private Instant createdAt = Instant.now();
+
+  @Column(nullable = false)
+  private Instant updatedAt = Instant.now();
+
+  @PrePersist
+  void onCreate() {
+    if (createdAt == null) createdAt = Instant.now();
+    if (updatedAt == null) updatedAt = Instant.now();
+    if (category == null) category = "General";
+  }
+
+  @PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
+  }
 
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
@@ -45,5 +67,9 @@ public class MenuItem {
   public void setAvailable(boolean available) { this.available = available; }
   public String getImageUrl() { return imageUrl; }
   public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+  public java.time.LocalDate getMenuDate() { return menuDate; }
+  public void setMenuDate(java.time.LocalDate menuDate) { this.menuDate = menuDate; }
   public Instant getCreatedAt() { return createdAt; }
+  public Instant getUpdatedAt() { return updatedAt; }
+  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

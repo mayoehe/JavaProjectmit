@@ -9,7 +9,13 @@ import java.time.Instant;
  * or an ADMIN (canteen staff). studentId is the login identifier for both.
  */
 @Entity
-@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "studentId"))
+@Table(name = "users",
+    uniqueConstraints = @UniqueConstraint(columnNames = "studentId"),
+    indexes = {
+        @Index(name = "idx_users_role", columnList = "role"),
+        @Index(name = "idx_users_status", columnList = "status"),
+        @Index(name = "idx_users_tab", columnList = "tabBalance")
+    })
 public class User {
 
   @Id
@@ -37,8 +43,28 @@ public class User {
   @Column(nullable = false)
   private double tabBalance = 0.0;
 
+  /** Account status: ACTIVE | DISABLED. Disabled users cannot login. */
+  @Column(nullable = false)
+  private String status = "ACTIVE";
+
   @Column(nullable = false, updatable = false)
   private Instant createdAt = Instant.now();
+
+  @Column(nullable = false)
+  private Instant updatedAt = Instant.now();
+
+  @PrePersist
+  void onCreate() {
+    if (createdAt == null) createdAt = Instant.now();
+    if (updatedAt == null) updatedAt = Instant.now();
+    if (status == null) status = "ACTIVE";
+    if (role == null) role = "STUDENT";
+  }
+
+  @PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
+  }
 
   // --- getters / setters ---
   public Long getId() { return id; }
@@ -55,5 +81,9 @@ public class User {
   public void setRole(String role) { this.role = role; }
   public double getTabBalance() { return tabBalance; }
   public void setTabBalance(double tabBalance) { this.tabBalance = tabBalance; }
+  public String getStatus() { return status; }
+  public void setStatus(String status) { this.status = status; }
   public Instant getCreatedAt() { return createdAt; }
+  public Instant getUpdatedAt() { return updatedAt; }
+  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

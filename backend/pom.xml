@@ -69,6 +69,12 @@
       <version>0.12.6</version>
       <scope>runtime</scope>
     </dependency>
+    <!-- Excel export/import (Apache POI) -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>5.2.5</version>
+    </dependency>
     <!-- Test -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

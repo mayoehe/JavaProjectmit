@@ -25,6 +25,10 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 app:
+  # Comma-separated browser origins allowed to call the API.
+  # Local default covers Vite dev + docker nginx. In production set
+  # APP_CORS_ORIGINS to your Vercel URL, e.g. https://canteen.vercel.app
+  cors-origins: ${APP_CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   admin:
     id: ${ADMIN_ID:admin}
     password: ${ADMIN_PASSWORD:admin123}
