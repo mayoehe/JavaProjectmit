@@ -35,6 +35,15 @@ public class OrderController {
     return orders.myOrders(principal.getName());
   }
 
+  /**
+   * Student cancels their own PENDING order. READY or later → 400.
+   * Other students' orders → 404. (Admin flow via PATCH /{id}/status is unchanged.)
+   */
+  @PatchMapping("/my/{id}/cancel")
+  public OrderResponse cancelMine(Principal principal, @PathVariable Long id) {
+    return orders.cancelMyOrder(principal.getName(), id);
+  }
+
   /** All orders — admin only. */
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping

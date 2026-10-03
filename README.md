@@ -11,6 +11,7 @@ Two interfaces: **Student** (menu → cart → order → profile/tab) and **Admi
 - Pay **in person** on pickup (no online payments)
 - Uncollected orders auto-added to **tab balance**
 - Profile page: info, tab, active orders, full history
+- Cancel own **PENDING** orders (free, nothing charged); cancellation closes once the order is **READY**
 
 **Admin (canteen staff)**
 - Separate admin login, role-guarded APIs (`ROLE_ADMIN`)
@@ -149,6 +150,7 @@ Hobby limits to know: static frontend fits easily; serverless timeout/bandwidth 
 | POST/PUT/PATCH/DELETE | `/api/menu…` | admin | Menu CRUD + `/{id}/availability` |
 | POST | `/api/orders` | student | `{items:[{menuItemId, quantity}]}` → order (pay on pickup) |
 | GET | `/api/orders/my` | student | Own orders (active + history) |
+| PATCH | `/api/orders/my/{id}/cancel` | student | Cancel own **PENDING** order → `CANCELLED` (`400` if READY or later, `404` for others' orders) |
 | GET | `/api/orders` | admin | All orders, newest first |
 | PATCH | `/api/orders/{id}/status` | admin | `{"status":"READY" \| "COLLECTED" \| "UNCOLLECTED" \| …}` |
 | GET | `/api/orders/summary` | admin | Counts + collected revenue + tab outstanding |
@@ -199,6 +201,11 @@ Database: relational (H2 in-memory for local dev, PostgreSQL 16 in Docker/prod v
 1. In **🗄️ Excel Data → 📥 Import**, choose the edited `.xlsx` for Users/Menu (only `.xlsx`/`.xlsm` accepted).
 2. Result shows `created, updated, skipped` + per-row `errors` (e.g. `Row 5: Price must be positive`); valid rows still apply even if others fail.
 3. Dashboard auto-refreshes. Or via API: `POST /api/admin/import/users` with `multipart/form-data file=@canteen-users.xlsx`.
+
+## ❌ Student order cancellation
+- Students can cancel their own orders **only while PENDING** (Profile → Active Orders or Ordering → Active Orders → **✖ Cancel Order**, with confirm + success feedback).
+- Once the canteen starts the order (**READY**, **COLLECTED**, **UNCOLLECTED**), cancellation closes: the API returns `400` ("Cancellation is no longer possible — your order is already …") and the UI hides the button, showing a "please collect at the counter" note instead.
+- Cancelling sets status to **CANCELLED**. PENDING orders never touch the tab, so nothing is charged or reversed. Cancelling someone else's order returns `404`; the admin flow (`PATCH /api/orders/{id}/status`) is unchanged.
 
 ## 📊 Day-by-Day Sales Excel export (Admin only)
 1. Login as admin, open **Canteen Dashboard → 🗄️ Excel Data → 📊 Sales Report**.
