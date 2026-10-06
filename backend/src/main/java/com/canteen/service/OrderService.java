@@ -72,6 +72,32 @@ public class OrderService {
   }
 
   /**
+   * Student cancels their own order. Only PENDING orders can be cancelled —
+   * once the canteen starts preparing it (READY or later) cancellation is closed.
+   * PENDING orders never touch the tab (tab is only added on transition to
+   * UNCOLLECTED), so there is nothing to reverse here.
+   */
+  @Transactional
+  public OrderResponse cancelMyOrder(String studentId, Long orderId) {
+    CanteenOrder order = orders.findById(orderId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+    if (order.getStudent() == null || !studentId.equals(order.getStudent().getStudentId())) {
+      // Same 404 for other students' orders so IDs can't be probed.
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+    }
+    if (CanteenOrder.CANCELLED.equals(order.getStatus())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order is already cancelled");
+    }
+    if (!CanteenOrder.PENDING.equals(order.getStatus())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+          "Cancellation is no longer possible — your order is already " + order.getStatus()
+          + ". Please collect it at the counter.");
+    }
+    order.setStatus(CanteenOrder.CANCELLED);
+    return OrderResponse.from(orders.save(order));
+  }
+
+  /**
    * Admin status transition. Side effect: first transition to UNCOLLECTED
    * adds order total to the student's tab balance.
    */

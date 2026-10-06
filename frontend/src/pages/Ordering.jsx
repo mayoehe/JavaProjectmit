@@ -13,6 +13,7 @@ export default function Ordering() {
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
   const [filter, setFilter] = useState('All')
+  const [cancelling, setCancelling] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -63,6 +64,21 @@ export default function Ordering() {
       setError(errMsg(e, 'Could not place order'))
     } finally {
       setPlacing(false)
+    }
+  }
+
+  const cancelOrder = async (id) => {
+    if (!confirm(`Cancel order #${id}? The canteen hasn't started it yet, so no charge applies.`)) return
+    setError(''); setOk(''); setCancelling(id)
+    try {
+      await api.patch(`/api/orders/my/${id}/cancel`)
+      setOk(`Order #${id} cancelled. Nothing was charged. ✅`)
+      const { data } = await api.get('/api/orders/my')
+      setMyOrders(data)
+    } catch (e) {
+      setError(errMsg(e, 'Could not cancel order'))
+    } finally {
+      setCancelling(null)
     }
   }
 
@@ -156,6 +172,15 @@ export default function Ordering() {
                 <span className={`badge ${o.status.toLowerCase()}`}>{o.status}</span>
                 <span className="muted"> #{o.id} · ₹{Number(o.total).toFixed(2)}</span>
                 <div className="muted">{o.items?.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</div>
+                {o.status === 'PENDING' ? (
+                  <div className="row" style={{ marginTop: 6 }}>
+                    <button className="btn small secondary" disabled={cancelling === o.id} onClick={() => cancelOrder(o.id)}>
+                      {cancelling === o.id ? 'Cancelling…' : '✖ Cancel Order'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="muted" style={{ marginTop: 6 }}>🔔 Being prepared — cancellation closed.</div>
+                )}
               </div>
             ))}
           </div>
