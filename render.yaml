@@ -1,0 +1,43 @@
+# Render Blueprint — Campus Canteen backend (Spring Boot via Docker).
+#
+# Deploy: push this repo to GitHub → Render dashboard → New → Blueprint →
+# select the repo → enter the secrets below → Apply.
+# Secrets use `sync: false`, so Render prompts for them in the dashboard;
+# they are never committed to git.
+#
+# After deploy, note the public URL (https://canteen-backend-XXXX.onrender.com)
+# — step 3 needs it as the frontend's VITE_API_URL.
+
+services:
+  - type: web
+    name: canteen-backend
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres.vmbckybhwpwfmkpmknsg
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false # Supabase DB password — paste in dashboard
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong random secret
+      - key: JWT_EXPIRATION_MS
+        value: 86400000
+      - key: ADMIN_ID
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false # Change from the default — paste in dashboard
+      - key: ADMIN_NAME
+        value: Canteen Admin
+      - key: ADMIN_EMAIL
+        value: admin@college.edu
+      - key: APP_CORS_ORIGINS
+        # TODO (step 3): replace with your Vercel URL, e.g.
+        # https://canteen-frontend.vercel.app
+        value: http://localhost:5173,http://localhost:3000

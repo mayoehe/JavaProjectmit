@@ -1,6 +1,7 @@
 # Local default: H2 in-memory (zero setup). Activate `postgres` profile in Docker/prod.
 server:
-  port: 8080
+  # Render (and most PaaS hosts) inject PORT; default 8080 keeps local dev unchanged.
+  port: ${PORT:8080}
 
 spring:
   application:
