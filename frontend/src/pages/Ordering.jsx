@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api, errMsg } from '../api/client.js'
 import HoldButton from '../components/HoldButton.jsx'
 
-const EMOJI = ['🍛', '🍜', '🥪', '🍔', '☕', '🧃', '🍩', '🥗']
+const EMOJI = ['🍵', '☕', '🍥', '🍱', '🍛', '🥙', '🍜', '🥪']
 
 export default function Ordering() {
   const [menu, setMenu] = useState([])
@@ -71,7 +71,9 @@ export default function Ordering() {
   return (
     <div className="page">
       <h2>🍽️ Today&apos;s Menu</h2>
-      <p className="muted">Pre-order now, pay in person when collecting.</p>
+      <p className="muted" style={{ marginBottom: 20 }}>
+        Pre-order now, pay in person when collecting.
+      </p>
       {error && <p className="error">{String(error)}</p>}
       {ok && <p className="ok">{ok}</p>}
 
